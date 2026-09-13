@@ -8,6 +8,12 @@
   var root = document.documentElement;
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  /* Labels set from script go through i18n.js; English if it isn't loaded. */
+  function t(key, fallback) {
+    var value = window.LA_I18N ? window.LA_I18N.t(key) : '';
+    return value || fallback;
+  }
+
   /* ---------- Theme ---------------------------------------------------- */
   var THEME_KEY = 'la-theme';
   var themeToggle = document.getElementById('themeToggle');
@@ -21,8 +27,11 @@
     if (themeToggle) {
       var toLight = theme === 'dark';
       themeToggle.setAttribute('aria-pressed', String(theme === 'light'));
-      themeToggle.setAttribute('aria-label', 'Switch to ' + (toLight ? 'light' : 'dark') + ' theme');
-      themeToggle.setAttribute('title', 'Switch to ' + (toLight ? 'light' : 'dark') + ' theme');
+      var label = toLight
+        ? t('theme.toLight', 'Switch to light theme')
+        : t('theme.toDark', 'Switch to dark theme');
+      themeToggle.setAttribute('aria-label', label);
+      themeToggle.setAttribute('title', label);
     }
   }
 
@@ -50,7 +59,7 @@
     if (!nav || !menuToggle) return;
     nav.classList.toggle('is-open', open);
     menuToggle.setAttribute('aria-expanded', String(open));
-    menuToggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+    menuToggle.setAttribute('aria-label', open ? t('menu.close', 'Close menu') : t('menu.open', 'Open menu'));
     if (scrim) scrim.hidden = !open;
     document.body.style.overflow = open ? 'hidden' : '';
   }
@@ -244,6 +253,19 @@
 
     sections.forEach(function (section) { spy.observe(section); });
   }
+
+  /* ---------- Language change: refresh labels built from script -------- */
+  document.addEventListener('la:langchange', function () {
+    applyTheme(root.getAttribute('data-theme'));
+    if (menuToggle) {
+      var open = nav.classList.contains('is-open');
+      menuToggle.setAttribute('aria-label', open ? t('menu.close', 'Close menu') : t('menu.open', 'Open menu'));
+    }
+    /* Meters already filled carry an aria-label built from the old language. */
+    meters.forEach(function (meter) {
+      if (meter.querySelector('.meter-track[role]')) fillMeter(meter);
+    });
+  });
 
   /* ---------- Footer year ---------------------------------------------- */
   var year = document.getElementById('year');
